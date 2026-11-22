@@ -25,7 +25,7 @@
     - **분할 전략:** `track1data`를 시간(인덱스) 순서대로 80%(Train) / 20%(Val) 분할 (랜덤 셔플 분할 금지), `track2data`(또는 급커브 구간)를 OOD Test Set으로 설정.
     - **Train Set 2종 구성:**
         - **Dataset A (Vanilla BC):** `center` 이미지 및 원본 `steering`만 사용.
-        - **Dataset B (Augmented BC):** `center` + `left(steering + 0.2)` + `right(steering - 0.2)` 사용.
+        - **Dataset B (Augmented BC):** `train_b.csv`에는 `center`, `left`, `right` 모두 원본 조향값 `s = steering_recorded`를 저장한다(저장 시 보정량 δ = 0). 학습 시 각 팀원이 실험별로 δ를 정하고, 목표값을 정면 `s`, 왼쪽 `s + δ`, 오른쪽 `s - δ`로 계산한다.
     - **Val / Test Set:** 평가 기준 왜곡 방지를 위해 두 실험 모두 **`center` 이미지와 원본 `steering`만** 사용.
 
 - [ ]  **`[ ]` [ 모델 학습 ] PyTorch ResNet-18 기반 대조 실험**
@@ -40,7 +40,7 @@
 
 - [ ]  **`[ ]` [ 수식 및 결론 정리 ] 오프라인 보정의 한계와 DAgger의 필연성**
     - 수식 정리:  $\pi_i = \arg\min_{\pi} \sum \mathbb{E}_{s \sim d_{\pi_{i-1}}} [L(\pi(s), \pi^*(s))]$
-    - **비교 고찰:** Model B가 Model A보다 OOD에서 개선된 이유(오프라인 복구 행동 학습)와, 그럼에도 여전히 실패하는 이유(임의의 `±0.2` 휴리스틱 라벨의 부정확성, 새로운 트랙/급커브 분포 미포함)를 정리하고, 이를 모델이 직접 겪은 상태 $s \sim d_{\pi_{i-1}}$에 전문가 $\pi^*$가 재라벨링하는 DAgger 방식과 대비시켜 마무리.
+    - **비교 고찰:** Model A와 Model B의 OOD 평가 결과를 바탕으로 측면 보정의 효과와 한계를 분석한다. 실험에서 선택한 δ가 실제 복귀에 필요한 조향값을 얼마나 잘 근사하는지, 학습 데이터가 새로운 트랙과 급커브를 얼마나 반영하는지 논의하고, 모델이 직접 겪은 상태 $s \sim d_{\pi_{i-1}}$에 전문가 $\pi^*$가 재라벨링하는 DAgger 방식과 비교한다.
 
 ## 2. 2D to 3D 투영과 BEV 기초 (LSS & BEVFormer)
 
