@@ -23,7 +23,7 @@ data/
         └── IMG/
 ```
 
-예를 들어 분할 CSV의 `image_path`가 `track1data/IMG/center_2019_04_02_19_25_33_671.jpg`이면 실제 파일 위치는 `data/Udacity/track1data/IMG/center_2019_04_02_19_25_33_671.jpg`이다.
+분할 CSV의 `image_path`는 `data/Udacity/`를 기준으로 한 상대 경로다.
 
 ## 데이터 분할
 
@@ -36,16 +36,21 @@ data/
 | [공통 Val](splits/val.csv) | track1data | 8492–10614 | center | 2,123 |
 | [공통 OOD Test](splits/test.csv) | track2data | 0–21827 | center | 21,828 |
 
-## 사용 순서
+## 학습 CSV 구성
 
-1. 각 모델에 해당하는 Train CSV를 읽는다. 각 행은 이미지 한 장과 조향 목표값 하나를 나타낸다. 원본 기록은 `track`과 `row_index`로 식별하고 시점은 `camera` 열로 구분한다.
-2. 학습 시 CSV의 `steering_target`을 그대로 사용한다. Train B에서는 주행 로그의 값 `s = steering_recorded`에 카메라별 고정 보정을 한 번 적용해 저장했다. 아래 예시는 첫 주행 기록(`row_index = 0`)에 해당한다.
+두 파일은 Track 1의 동일한 8,492개 주행 시점을 사용한다. `track`과 `row_index`가 같으면 같은 시점이고, `camera`는 촬영 위치를 나타낸다.
 
-   | 카메라 | 목표값 계산 | 기록값이 0일 때 목표값 |
-   |---|---|---:|
-   | center | `s` | 0 |
-   | left | `s + 0.2` | 0.2 |
-   | right | `s - 0.2` | −0.2 |
+- **`train_a.csv`**는 모델 A의 학습 목록이다. 시점마다 정면 이미지 한 장과 해당 시점의 원본 조향값을 한 행에 담는다.
+- **`train_b.csv`**는 모델 B의 학습 목록이다. 시점마다 정면·왼쪽·오른쪽 이미지를 한 행씩 담아 총 25,476행이다. **CSV에 저장된 측면 보정량은 δ = 0**이므로 세 행 모두 같은 원본값을 가지며, `steering_target`과 `steering_recorded`가 일치한다.
 
-   0.2는 측면에서 중앙으로 복귀하는 동작을 근사하기 위해 원본 조향값 척도에서 정한 실험 상수다. 보정값은 클리핑하지 않아 Train B의 측면 샘플 45개가 [−1, 1] 범위를 벗어난다.
-3. 각 모델의 체크포인트는 공통 Val의 MSE로 선택한다. 선택한 두 모델을 공통 OOD Test에서 평가한다.
+## 조향값과 평가 기준
+
+모델 B를 학습할 때 각 팀원은 실험별로 δ를 정하고, 원본 조향값 `s = steering_recorded`에서 카메라별 학습 목표를 계산한다.
+
+| 카메라 | CSV에 저장된 목표값 | 모델 B 학습 시 목표값 |
+|---|---|---|
+| center | `s` | `s` |
+| left | `s` | `s + δ` |
+| right | `s` | `s - δ` |
+
+모든 실험은 공통 Val과 OOD Test에서 정면 이미지와 원본 조향값을 사용한다. 체크포인트는 Val MSE로 선택하고, OOD Test에서 모델별 MSE, MAE와 조향 분포를 비교한다.
