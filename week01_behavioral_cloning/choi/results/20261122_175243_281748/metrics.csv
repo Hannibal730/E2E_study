@@ -1,0 +1,2 @@
+experiment,mse,mae,kl_steering_recorded_to_prediction
+model_b,0.19989668,0.29855406,10.145803739230603
