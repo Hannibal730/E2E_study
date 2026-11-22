@@ -8,6 +8,7 @@ import numpy as np
 import yaml
 
 from run_paths import evaluation_run, output_path
+from steering import camera_deltas
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -42,32 +43,41 @@ def save_metrics(sources, destination):
         if not metrics.is_file():
             print(f"Skipping metrics for {label}: missing {metrics}")
             continue
-        delta = settings.get("training", {}).get("steering_delta")
+        training = settings.get("training", {})
+        has_delta = any(key in training for key in ("left_delta", "right_delta", "steering_delta"))
+        deltas = camera_deltas(training) if has_delta else None
         with metrics.open(newline="") as stream:
             for row in csv.DictReader(stream):
-                if row["experiment"] == "model_b" and delta is None:
+                if row["experiment"] == "model_b" and deltas is None:
                     try:
                         delta = float(label.split("=")[-1])
+                        deltas = (delta, -delta)
                     except ValueError:
                         print(f"Skipping model_b metrics for {label}: unknown steering_delta")
                         continue
-                measurements.append((label, delta, row))
+                measurements.append((label, deltas, row))
     if not measurements:
         return
+    asymmetric = any(pair[0] != -pair[1] for _, pair, row in measurements if row["experiment"] == "model_b")
     fig, axes = plt.subplots(1, 3, figsize=(12, 3.6), layout="constrained")
     for ax, key, title in zip(axes, ("mse", "mae", "kl_steering_recorded_to_prediction"),
                              ("MSE", "MAE", "KL divergence")):
         points = []
-        for label, delta, row in measurements:
+        for label, pair, row in measurements:
             value = float(row[key] if key in row else row["kl_expert_to_prediction"])
             if row["experiment"] == "model_a":
                 ax.axhline(value, ls="--", color="#58566b", label="model_a")
             elif row["experiment"] == "model_b":
-                points.append((delta, value))
-        if points:
+                points.append((pair, value))
+        if points and asymmetric:
+            positions = range(len(points))
+            ax.scatter(positions, [value for _, value in points], color="#147477", label="model_b")
+            ax.set_xticks(positions, [f"{left:+g}/{right:+g}" for (left, right), _ in points],
+                          rotation=55, ha="right")
+        elif points:
             x, y = zip(*sorted(points))
-            ax.plot(x, y, "-o", ms=4, color="#147477", label="model_b")
-        ax.set(xlabel="model_b steering correction δ", title=title)
+            ax.plot([left for left, _ in x], y, "-o", ms=4, color="#147477", label="model_b")
+        ax.set(xlabel="model_b δ (left/right)" if asymmetric else "model_b steering correction δ", title=title)
         ax.grid(axis="y", alpha=0.2)
     axes[0].legend()
     fig.savefig(destination, dpi=150)

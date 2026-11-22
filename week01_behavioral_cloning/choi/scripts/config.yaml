@@ -20,7 +20,8 @@ model:  # 조향값 하나를 출력하도록 마지막 fc 층을 교체할 모�
   architecture: resnet18  # torchvision 모델 이름 (fc 층을 사용하는 구조)
   weights: DEFAULT  # ResNet-18의 ImageNet-1K V1 가중치. null이면 무작위 초기화
 training:  # 모델 학습 설정
-  steering_delta: 1.0  # Model B 학습 전용. 기록값 기준 왼쪽 +δ, 오른쪽 −δ (0.0이면 보정 없음)
+  left_delta: 1.0  # model_b 학습 시 왼쪽 이미지의 기록 조향값에 더할 값 (0 이상)
+  right_delta: -0.1  # 오른쪽 이미지의 기록 조향값에 더할 값 (0 이하)
   seed: 42  # 각 실험 시작 시 초기화와 데이터 셔플에 사용할 난수 시드
   device: auto  # auto는 CUDA 사용 가능 시 GPU, 그 외에는 CPU. cpu, cuda:0 등 지정 가능
   epochs: 10  # 각 모델이 전체 학습 목록을 반복하는 횟수

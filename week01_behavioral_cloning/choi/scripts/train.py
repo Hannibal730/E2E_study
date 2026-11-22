@@ -15,6 +15,7 @@ from torch.utils.data import DataLoader
 from torchvision import models
 
 from dataset import SteeringDataset
+from steering import camera_deltas
 
 
 def read_config(path):
@@ -34,9 +35,9 @@ def make_model(config, weights):
     return model
 
 
-def make_loader(config, base, split, shuffle, steering_delta=None):
+def make_loader(config, base, split, shuffle, steering_delta=None, *, deltas=None):
     dataset = SteeringDataset(base / split, base / config["data"]["image_root"],
-                              config["preprocessing"], steering_delta)
+                              config["preprocessing"], steering_delta, deltas=deltas)
     training = config["training"]
     return DataLoader(dataset, batch_size=training["batch_size"],
                       num_workers=training["num_workers"], shuffle=shuffle)
@@ -83,8 +84,8 @@ def train(config, base, name, run_dir):
         raise ValueError("epochs must be positive")
     torch.manual_seed(settings["seed"])
     device = select_device(settings["device"])
-    delta = settings.get("steering_delta", 0.2) if name == "model_b" else None
-    train_loader = make_loader(config, base, config["experiments"][name], settings["shuffle_train"], delta)
+    deltas = camera_deltas(settings) if name == "model_b" else None
+    train_loader = make_loader(config, base, config["experiments"][name], settings["shuffle_train"], deltas=deltas)
     val_loader = make_loader(config, base, config["data"]["validation"], False)
     model = make_model(config["model"], config["model"]["weights"]).to(device)
     criterion = getattr(nn, settings["loss"])()
