@@ -78,7 +78,11 @@ def save_metrics(sources, destination):
 def plot(sources, destination, alpha):
     if not sources:
         raise ValueError("Specify at least one histogram in plot.input_csvs")
-    fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(13, 6), layout="constrained")
+    colors = ("#0066ad", "#c34400", "#007a55", "#943998", "#ad8000", "#00859b",
+              "#bc315e", "#524ab3", "#64852b", "#805430", "#df654a")
+    markers = ("o", "s", "^", "D", "v", "P", "X", "<", ">", "h", "*")
+    prediction_index = 0
     panels = []
     recorded_series = set()
     for label, path in sources.items():
@@ -109,16 +113,34 @@ def plot(sources, destination, alpha):
                 if signature in recorded_series:
                     continue
                 recorded_series.add(signature)
-            ax.stairs(density, edges, label=name if name == "model_a" else f"{label} / {name}",
-                      linestyle="--" if recorded else "-", alpha=alpha)
+                ax.stairs(density, edges, fill=True, color="#777777",
+                          alpha=0.22, label=f"{label} / {name}", zorder=1)
+            else:
+                if name == "model_a":
+                    color, marker, legend_label = "#181818", "p", name
+                else:
+                    i = prediction_index
+                    prediction_index += 1
+                    color = colors[i % len(colors)]
+                    marker = markers[i % len(markers)]
+                    legend_label = f"{name} · {label}"
+                # Place the marker at the center of the highest-density bin.
+                midpoints = (left + right) / 2
+                x = np.column_stack((left, midpoints, right)).ravel()
+                ax.plot(x, np.repeat(density, 3), color=color, linestyle="-",
+                        linewidth=1.7, alpha=alpha, marker=marker,
+                        markevery=[3 * int(density.argmax()) + 1], markersize=6,
+                        markerfacecolor="white", markeredgewidth=1.4,
+                        label=legend_label, zorder=4)
         recorded_density = densities.pop("steering_recorded")
         for name, density in densities.items():
             title = name if name == "model_a" else f"{name} ({label})"
             panels.append((title, edges, recorded_density, density))
     ax.set(xlabel="Steering", ylabel="Probability density")
-    ax.legend()
-    fig.tight_layout()
-    fig.savefig(destination)
+    ax.grid(axis="y", color="#dddddd", linewidth=0.6)
+    ax.set_axisbelow(True)
+    ax.legend(loc="center left", bbox_to_anchor=(1.01, 0.5), frameon=False, handlelength=3.5)
+    fig.savefig(destination, dpi=160)
     plt.close(fig)
     print(f"Saved {destination.resolve()}")
     panel_path = destination.with_name("distributions_by_delta.png")
