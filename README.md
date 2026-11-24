@@ -39,7 +39,7 @@
     - 두 모델 각각의 **MSE / MAE** 및 **KL Divergence** 수치 비교 테이블 작성.
 
 - [ ]  **`[ ]` [ 수식 및 결론 정리 ] 오프라인 보정의 한계와 DAgger의 필연성**
-    - 수식 정리:  $\pi_i = \arg\min_{\pi} \sum \mathbb{E}_{s \sim d_{\pi_{i-1}}} [L(\pi(s), \pi^*(s))]$
+    - 수식 정리: $\hat{\pi} = \arg\min_{\pi\in\Pi} \mathbb{E}_{s\sim d_\pi}[\ell(s,\pi)]$
     - **비교 고찰:** Model A와 Model B의 OOD 평가 결과를 바탕으로 측면 보정의 효과와 한계를 분석한다. 실험에서 선택한 δ가 실제 복귀에 필요한 조향값을 얼마나 잘 근사하는지, 학습 데이터가 새로운 트랙과 급커브를 얼마나 반영하는지 논의하고, 모델이 직접 겪은 상태 $s \sim d_{\pi_{i-1}}$에 전문가 $\pi^*$가 재라벨링하는 DAgger 방식과 비교한다.
 
 ## 2. 2D to 3D 투영과 BEV 기초 (LSS & BEVFormer)
