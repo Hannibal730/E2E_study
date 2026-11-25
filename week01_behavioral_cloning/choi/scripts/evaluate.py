@@ -5,8 +5,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from run_paths import evaluation_run, output_path
-from train import make_loader, make_model, read_config, select_device
+from experiment_config import evaluation_run, output_path, read_config
+from train import make_loader, make_model, select_device
 
 
 @torch.inference_mode()

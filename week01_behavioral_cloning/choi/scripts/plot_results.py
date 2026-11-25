@@ -5,10 +5,8 @@ from pathlib import Path
 
 import matplotlib
 import numpy as np
-import yaml
 
-from run_paths import evaluation_run, output_path
-from steering import camera_deltas
+from experiment_config import camera_deltas, evaluation_run, output_path, read_config
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -38,7 +36,7 @@ def save_metrics(sources, destination):
     measurements = []
     for label, path in sources.items():
         snapshot = path.parent / "config.yaml"
-        settings = yaml.safe_load(snapshot.read_text()) if snapshot.is_file() else {}
+        settings = read_config(snapshot) if snapshot.is_file() else {}
         metrics = path.parent / settings.get("evaluation", {}).get("metrics_csv", "metrics.csv")
         if not metrics.is_file():
             print(f"Skipping metrics for {label}: missing {metrics}")
@@ -163,8 +161,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Overlay steering histograms from the configured CSV files.")
     parser.add_argument("--config", type=Path, default=Path(__file__).with_name("config.yaml"))
     args = parser.parse_args()
-    with args.config.open(encoding="utf-8") as stream:
-        config = yaml.safe_load(stream)
+    config = read_config(args.config)
     base = args.config.resolve().parent
     options = config["plot"]
     if "input_csvs" in options:
